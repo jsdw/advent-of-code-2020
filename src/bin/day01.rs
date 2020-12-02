@@ -1,14 +1,9 @@
 use structopt::StructOpt;
-use shared::FileContent;
+use shared::FileContentOpts;
 use std::collections::HashSet;
 
-#[derive(StructOpt)]
-struct Opts {
-    file: FileContent
-}
-
 fn main() -> Result<(),anyhow::Error> {
-    let opts = Opts::from_args();
+    let opts = FileContentOpts::from_args();
 
     let nums: Vec<i64> = opts.file.lines().filter_map(|s| s.parse().ok()).collect();
 

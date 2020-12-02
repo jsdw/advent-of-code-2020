@@ -10,5 +10,7 @@ path = "src/shared/lib.rs"
 
 [dependencies]
 anyhow = "1.0.34"
+once_cell = "1.5.2"
+regex = "1.4.2"
 structopt = "0.3.21"
 

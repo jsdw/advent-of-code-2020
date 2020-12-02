@@ -1,5 +1,14 @@
 use std::fs::read_to_string;
+use structopt::StructOpt;
 
+/// Opts which extract the file content
+#[derive(StructOpt)]
+pub struct FileContentOpts {
+    /// Path to the input for the puzzle
+    pub file: FileContent
+}
+
+/// Use this as a structopt opt to get the file content
 pub struct FileContent(pub String);
 
 impl std::str::FromStr for FileContent {
