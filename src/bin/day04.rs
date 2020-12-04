@@ -1,6 +1,7 @@
 use structopt::StructOpt;
 use shared::FileContentOpts;
 use shared::try_bool;
+use shared::regex;
 
 fn main() -> Result<(),anyhow::Error> {
     let opts = FileContentOpts::from_args();
@@ -9,6 +10,9 @@ fn main() -> Result<(),anyhow::Error> {
 
     let num_valid = parts.iter().filter(|p| p.is_valid_part1()).count();
     println!("Star 1: {}", num_valid);
+
+    let num_valid = parts.iter().filter(|p| p.is_valid_part2()).count();
+    println!("Star 2: {}", num_valid);
 
     Ok(())
 }
@@ -57,8 +61,40 @@ impl <'a> PassportParts<'a> {
         true
     }
     fn is_valid_part2(&self) -> bool {
-        let byr: usize = try_bool!(self.byr.parse());
-        // if byr < 1920 || byr > 2002 {  }
+        let byr: u16 = try_bool!(self.byr.parse());
+        try_bool!(byr >= 1920 && byr <= 2002);
+        let iyr: u16 = try_bool!(self.iyr.parse());
+        try_bool!(iyr >= 2010 && iyr <= 2020);
+        let eyr: u16 = try_bool!(self.eyr.parse());
+        try_bool!(eyr >= 2020 && eyr <= 2030);
+        try_bool!(height_is_valid(&self.hgt));
+        try_bool!(hair_is_valid(&self.hcl));
+        try_bool!(eye_is_valid(&self.ecl));
+        try_bool!(self.pid.len() == 9);
+        try_bool!(self.pid.parse::<u64>());
+        true
+    }
+}
+
+fn height_is_valid(s: &str) -> bool {
+    if let Some(n) = s.strip_suffix("cm") {
+        let n: u16 = try_bool!(n.parse());
+        n >= 150 && n <= 193
+    } else if let Some(n) = s.strip_suffix("in") {
+        let n: u16 = try_bool!(n.parse());
+        n >= 59 && n <= 76
+    } else {
         false
     }
+}
+
+fn hair_is_valid(s: &str) -> bool {
+    regex!(r"^#[0-9a-f]{6}$").is_match(s)
+}
+
+fn eye_is_valid(s: &str) -> bool {
+    ["amb", "blu", "brn", "gry", "grn", "hzl", "oth"]
+        .iter()
+        .find(|&&c| c == s)
+        .is_some()
 }
