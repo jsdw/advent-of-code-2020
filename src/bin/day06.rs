@@ -17,7 +17,7 @@ fn main() -> Result<(),anyhow::Error> {
         .map(|s| {
             s.lines()
              .map(to_set)
-             .fold(all_set(), |a, b| a.intersection(&b).cloned().collect())
+             .fold(all_set(), |a, b| &a & &b)
              .len()
         })
         .sum();
