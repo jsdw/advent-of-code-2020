@@ -5,7 +5,7 @@ use std::collections::{ HashMap, HashSet };
 
 fn main() -> Result<(),anyhow::Error> {
     let opts = FileContentOpts::from_args();
-    let rules: Vec<_> = opts.file.lines().filter_map(parse_rule).collect();
+    let rules: Vec<_> = parse_rules(&opts.file);
 
     println!("Star 1: {}", star1(&rules));
     println!("Star 2: {}", star2(&rules));
@@ -62,6 +62,10 @@ struct Rule<'a> {
     contains: Vec<(usize, &'a str)>
 }
 
+fn parse_rules(s: &str) -> Vec<Rule<'_>> {
+    s.lines().filter_map(parse_rule).collect()
+}
+
 fn parse_rule(line: &str) -> Option<Rule<'_>> {
     let (bag, contained_str) = {
         let mut s = line.split(" bags contain ");
@@ -101,13 +105,9 @@ mod test {
         dark violet bags contain no other bags.
     ";
 
-    fn rules(s: &str) -> Vec<Rule<'_>> {
-        s.lines().filter_map(parse_rule).collect()
-    }
-
     #[test]
     fn test_example1_parsing() {
-        let rules = rules(EXAMPLE1);
+        let rules = parse_rules(EXAMPLE1);
         assert_eq!(rules.len(), 9);
         let counts: usize = rules.into_iter().map(|r| r.contains.iter().map(|c| c.0).sum::<usize>()).sum();
         assert_eq!(counts, 1 + 2 + 3 + 4 + 1 + 2 + 9 + 1 + 2 + 3 + 4 + 5 + 6);
@@ -115,19 +115,19 @@ mod test {
 
     #[test]
     fn test_example1_star1() {
-        let rules = rules(EXAMPLE1);
+        let rules = parse_rules(EXAMPLE1);
         assert_eq!(star1(&rules), 4);
     }
 
     #[test]
     fn test_example1_star2() {
-        let rules = rules(EXAMPLE1);
+        let rules = parse_rules(EXAMPLE1);
         assert_eq!(star2(&rules), 32);
     }
 
     #[test]
     fn test_example2_star2() {
-        let rules = rules(EXAMPLE2);
+        let rules = parse_rules(EXAMPLE2);
         assert_eq!(star2(&rules), 126);
     }
 
