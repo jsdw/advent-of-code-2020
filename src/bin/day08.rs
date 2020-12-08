@@ -11,16 +11,19 @@ fn main() -> Result<(),anyhow::Error> {
     println!("Star 1: {}", run(&instructions).1);
 
     // Which nop/jmp to flip?
-    let acc = (0..instructions.len()).filter_map(|i| {
-        flip_instruction(&mut instructions[i]);
-        let (pos, acc) = run(&instructions);
-        flip_instruction(&mut instructions[i]);
-        if pos == instructions.len() as i32 {
-            Some(acc)
-        } else {
-            None
-        }
-    }).next().unwrap();
+    let acc = (0..instructions.len())
+        .filter_map(|i| {
+            flip_instruction(&mut instructions[i])?;
+            let (pos, acc) = run(&instructions);
+            flip_instruction(&mut instructions[i]);
+            if pos == instructions.len() as i32 {
+                Some(acc)
+            } else {
+                None
+            }
+        })
+        .next()
+        .unwrap();
     println!("Star 2: {}", acc);
 
     Ok(())
@@ -89,17 +92,27 @@ impl Instruction {
             _ => None
         }
     }
+    fn is_acc(&self) -> bool {
+        match self {
+            Instruction::Acc(..) => true,
+            _ => false
+        }
+    }
 }
 
-fn flip_instruction(i: &mut Instruction) {
+fn flip_instruction(i: &mut Instruction) -> Option<()> {
     match i {
         Instruction::Jmp(n) => {
-            *i = Instruction::Nop(*n)
+            *i = Instruction::Nop(*n);
+            Some(())
         },
         Instruction::Nop(n) => {
-            *i = Instruction::Jmp(*n)
+            *i = Instruction::Jmp(*n);
+            Some(())
         },
-        _ => {}
+        _ => {
+            None
+        }
     }
 }
 
