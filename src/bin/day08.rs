@@ -23,7 +23,6 @@ fn main() -> Result<(),anyhow::Error> {
     }).next().unwrap();
     println!("Star 2: {}", acc);
 
-
     Ok(())
 }
 
