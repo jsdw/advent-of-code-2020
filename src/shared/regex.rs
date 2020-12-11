@@ -2,7 +2,7 @@
 ///
 /// Usage:
 ///
-/// ```
+/// ```ignore
 /// let re = regex!("some-pattern");
 /// ```
 #[macro_export]

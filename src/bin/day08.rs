@@ -92,12 +92,6 @@ impl Instruction {
             _ => None
         }
     }
-    fn is_acc(&self) -> bool {
-        match self {
-            Instruction::Acc(..) => true,
-            _ => false
-        }
-    }
 }
 
 fn flip_instruction(i: &mut Instruction) -> Option<()> {
