@@ -1,5 +1,6 @@
 use structopt::StructOpt;
 use shared::{ FileContentOpts, Grid };
+use std::convert::TryFrom;
 
 fn main() -> Result<(),anyhow::Error> {
     let opts = FileContentOpts::from_args();
@@ -62,30 +63,29 @@ fn step_grid(tolerance: usize, grid: &Grid<Space>, get_occupied: fn(usize,usize,
 }
 
 fn num_occupied_part1(x: usize, y: usize, grid: &Grid<Space>) -> usize {
-    grid
-        .surrounding(x,y)
-        .filter(|s| s.is_occupied())
-        .count()
+    num_occupied(x, y, 1, grid)
 }
 
 fn num_occupied_part2(x: usize, y: usize, grid: &Grid<Space>) -> usize {
-    let occupieds = [
-        is_los_occupied(x,y,grid,|x,y| Some((x.checked_sub(1)?, y.checked_sub(1)?))),
-        is_los_occupied(x,y,grid,|x,y| Some((x, y.checked_sub(1)?))),
-        is_los_occupied(x,y,grid,|x,y| Some((x + 1, y.checked_sub(1)?))),
-        is_los_occupied(x,y,grid,|x,y| Some((x.checked_sub(1)?, y))),
-        is_los_occupied(x,y,grid,|x,y| Some((x + 1, y))),
-        is_los_occupied(x,y,grid,|x,y| Some((x.checked_sub(1)?, y + 1))),
-        is_los_occupied(x,y,grid,|x,y| Some((x, y + 1))),
-        is_los_occupied(x,y,grid,|x,y| Some((x + 1, y + 1))),
-    ];
-    occupieds.iter().filter(|b| **b).count()
+    num_occupied(x, y, usize::MAX, grid)
 }
 
-fn is_los_occupied<F>(x: usize, y: usize, grid: &Grid<Space>, mut f: F) -> bool
-where F: FnMut(usize,usize) -> Option<(usize,usize)> {
-    let fst = f(x,y);
-    std::iter::successors(fst, move |&(x,y)| f(x,y))
+fn num_occupied(x: usize, y: usize, n: usize, grid: &Grid<Space>) -> usize {
+    [(-1,-1),(0,-1),(1,-1),(-1,0),(1,0),(-1,1),(0,1),(1,1)]
+        .iter()
+        .map(|&diff| is_los_occupied(x,y,n, grid,diff))
+        .filter(|b| *b)
+        .count()
+}
+
+fn is_los_occupied(x: usize, y: usize, n: usize, grid: &Grid<Space>, (dx,dy): (isize,isize)) -> bool {
+    let succ = |&(x,y): &(usize,usize)| Some((
+        usize::try_from(x as isize - dx).ok()?,
+        usize::try_from(y as isize - dy).ok()?
+    ));
+    std::iter::successors(Some((x,y)), succ)
+        .skip(1)
+        .take(n)
         .map(|(x,y)| grid.get(x,y))
         .take_while(|s| s.is_some())
         .flatten()

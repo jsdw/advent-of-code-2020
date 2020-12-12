@@ -62,10 +62,6 @@ impl <T> Grid<T> {
                 ((x,y),t)
             })
     }
-
-    pub fn surrounding(&self, x: usize, y: usize) -> impl Iterator<Item = &T> {
-        surrounding(x,y).filter_map(move |(x,y)| self.get(x,y))
-    }
 }
 
 impl <T> std::ops::Index<(usize,usize)> for Grid<T> {
@@ -81,58 +77,10 @@ impl <T> std::ops::IndexMut<(usize,usize)> for Grid<T> {
     }
 }
 
-// Hideous code to get surrounding coords:
-fn surrounding(x: usize, y: usize) -> impl Iterator<Item = (usize,usize)> {
-    std::iter::empty()
-        // Top row
-        .chain(y.checked_sub(1).and_then(|y| Some((x.checked_sub(1)?, y))))
-        .chain(y.checked_sub(1).map(|y| (x,y)))
-        .chain(y.checked_sub(1).map(|y| (x+1,y)))
-        // Middle row
-        .chain(x.checked_sub(1).map(|x| (x,y)))
-        .chain(Some((x+1,y)))
-        // Bottom row
-        .chain(x.checked_sub(1).map(|x| (x,y+1)))
-        .chain(Some((x,y+1)))
-        .chain(Some((x+1,y+1)))
-}
-
 #[cfg(test)]
 mod test {
 
     use super::*;
-
-    #[test]
-    fn test_surrounding() {
-        let s = vec![
-            ((0,0), vec![(1,0), (0,1), (1,1)]),
-            ((1,1), vec![(0,0), (1,0), (2,0), (0,1), (2,1), (0,2), (1,2), (2,2)]),
-            ((2,0), vec![(1,0), (3,0), (1,1), (2,1), (3,1)])
-        ];
-        for ((x,y),expected) in s {
-            assert_eq!(surrounding(x,y).collect::<Vec<_>>(), expected, "expected right, got left with {:?}", (x,y));
-        }
-    }
-
-    #[test]
-    fn test_grid_surrounding() {
-        let g = Grid::from_iter(3, vec![0,1,2,3,4,5,6,7,8]);
-        let s = vec![
-            ((0,0), vec![1,3,4]),
-            ((1,0), vec![0,2,3,4,5]),
-            ((2,0), vec![1,4,5]),
-            ((0,1), vec![0,1,4,6,7]),
-            ((1,1), vec![0,1,2,3,5,6,7,8]),
-            ((2,1), vec![1,2,4,7,8]),
-            ((0,2), vec![3,4,7]),
-            ((1,2), vec![3,4,5,6,8]),
-            ((2,2), vec![4,5,7]),
-        ];
-        for ((x,y),expected) in s {
-            let actual: Vec<_> = g.surrounding(x,y).copied().collect();
-            assert_eq!(actual, expected, "expected right, got left with {:?}", (x,y));
-        }
-    }
 
     #[test]
     fn test_iter() {
