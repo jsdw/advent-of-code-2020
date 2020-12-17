@@ -21,16 +21,16 @@ fn main() -> Result<(),anyhow::Error> {
 
 // The step function is the same regardless of the num dimenions:
 macro_rules! step {
-    ($ty:ident) => {
+    ($ty:ident, $surrounding:ident) => {
         pub fn step(cube: &$ty) -> $ty {
             let locs_to_check: $ty = cube
                 .iter()
-                .flat_map(|&c| std::iter::once(c).chain(surrounding(c)))
+                .flat_map(|&c| std::iter::once(c).chain($surrounding(c)))
                 .collect();
             let mut new_cube = $ty::new();
             for loc in locs_to_check {
                 let is_active = cube.contains(&loc);
-                let num_active_surrounding = surrounding(loc).filter(|loc| cube.contains(loc)).count();
+                let num_active_surrounding = $surrounding(loc).filter(|loc| cube.contains(loc)).count();
                 let is_new_active = if !is_active && num_active_surrounding == 3 {
                     true
                 } else if is_active && (num_active_surrounding == 2 || num_active_surrounding == 3) {
@@ -47,22 +47,29 @@ macro_rules! step {
     }
 }
 
+// Parse input into the type required:
+macro_rules! parse_input {
+    ($ty:ident, $( $fillers:literal )+) => {
+        pub fn parse_input(s: &str) -> $ty {
+            let mut cube = $ty::new();
+            for (y,line) in s.trim().lines().enumerate() {
+                for (x,b) in line.trim().bytes().enumerate() {
+                    if b == b'#' {
+                        cube.insert((x as i32, y as i32, $($fillers),+));
+                    }
+                }
+            }
+            cube
+        }
+    }
+}
+
 // Parse and step in 3 dimensions:
 mod cube {
     type Cube = std::collections::HashSet<(i32,i32,i32)>;
-    step!(Cube);
 
-    pub fn parse_input(s: &str) -> Cube {
-        let mut cube = Cube::new();
-        for (y,line) in s.trim().lines().enumerate() {
-            for (x,b) in line.trim().bytes().enumerate() {
-                if b == b'#' {
-                    cube.insert((x as i32, y as i32, 0));
-                }
-            }
-        }
-        cube
-    }
+    step!(Cube, surrounding);
+    parse_input!(Cube, 0);
 
     fn surrounding((x,y,z): (i32,i32,i32)) -> impl Iterator<Item=(i32,i32,i32)> {
         use itertools::iproduct;
@@ -75,19 +82,9 @@ mod cube {
 // Parse and step in 4 dimensions:
 mod hypercube {
     type HyperCube = std::collections::HashSet<(i32,i32,i32,i32)>;
-    step!(HyperCube);
 
-    pub fn parse_input(s: &str) -> HyperCube {
-        let mut cube = HyperCube::new();
-        for (y,line) in s.trim().lines().enumerate() {
-            for (x,b) in line.trim().bytes().enumerate() {
-                if b == b'#' {
-                    cube.insert((x as i32, y as i32, 0, 0));
-                }
-            }
-        }
-        cube
-    }
+    step!(HyperCube, surrounding);
+    parse_input!(HyperCube, 0 0);
 
     fn surrounding((x,y,z,a): (i32,i32,i32,i32)) -> impl Iterator<Item=(i32,i32,i32,i32)> {
         use itertools::iproduct;
