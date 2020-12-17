@@ -19,8 +19,38 @@ fn main() -> Result<(),anyhow::Error> {
     Ok(())
 }
 
+// The step function is the same regardless of the num dimenions:
+macro_rules! step {
+    ($ty:ident) => {
+        pub fn step(cube: &$ty) -> $ty {
+            let locs_to_check: $ty = cube
+                .iter()
+                .flat_map(|&c| std::iter::once(c).chain(surrounding(c)))
+                .collect();
+            let mut new_cube = $ty::new();
+            for loc in locs_to_check {
+                let is_active = cube.contains(&loc);
+                let num_active_surrounding = surrounding(loc).filter(|loc| cube.contains(loc)).count();
+                let is_new_active = if !is_active && num_active_surrounding == 3 {
+                    true
+                } else if is_active && (num_active_surrounding == 2 || num_active_surrounding == 3) {
+                    true
+                } else {
+                    false
+                };
+                if is_new_active {
+                    new_cube.insert(loc);
+                }
+            }
+            new_cube
+        }
+    }
+}
+
+// Parse and step in 3 dimensions:
 mod cube {
     type Cube = std::collections::HashSet<(i32,i32,i32)>;
+    step!(Cube);
 
     pub fn parse_input(s: &str) -> Cube {
         let mut cube = Cube::new();
@@ -34,29 +64,6 @@ mod cube {
         cube
     }
 
-    pub fn step(cube: &Cube) -> Cube {
-        let locs_to_check: Cube = cube
-            .iter()
-            .flat_map(|&c| std::iter::once(c).chain(surrounding(c)))
-            .collect();
-        let mut new_cube = Cube::new();
-        for loc in locs_to_check {
-            let is_active = cube.contains(&loc);
-            let num_active_surrounding = surrounding(loc).filter(|loc| cube.contains(loc)).count();
-            let is_new_active = if !is_active && num_active_surrounding == 3 {
-                true
-            } else if is_active && (num_active_surrounding == 2 || num_active_surrounding == 3) {
-                true
-            } else {
-                false
-            };
-            if is_new_active {
-                new_cube.insert(loc);
-            }
-        }
-        new_cube
-    }
-
     fn surrounding((x,y,z): (i32,i32,i32)) -> impl Iterator<Item=(i32,i32,i32)> {
         use itertools::iproduct;
         iproduct!(-1..=1,-1..=1,-1..=1)
@@ -65,8 +72,10 @@ mod cube {
     }
 }
 
+// Parse and step in 4 dimensions:
 mod hypercube {
     type HyperCube = std::collections::HashSet<(i32,i32,i32,i32)>;
+    step!(HyperCube);
 
     pub fn parse_input(s: &str) -> HyperCube {
         let mut cube = HyperCube::new();
@@ -78,29 +87,6 @@ mod hypercube {
             }
         }
         cube
-    }
-
-    pub fn step(cube: &HyperCube) -> HyperCube {
-        let locs_to_check: HyperCube = cube
-            .iter()
-            .flat_map(|&c| std::iter::once(c).chain(surrounding(c)))
-            .collect();
-        let mut new_cube = HyperCube::new();
-        for loc in locs_to_check {
-            let is_active = cube.contains(&loc);
-            let num_active_surrounding = surrounding(loc).filter(|loc| cube.contains(loc)).count();
-            let is_new_active = if !is_active && num_active_surrounding == 3 {
-                true
-            } else if is_active && (num_active_surrounding == 2 || num_active_surrounding == 3) {
-                true
-            } else {
-                false
-            };
-            if is_new_active {
-                new_cube.insert(loc);
-            }
-        }
-        new_cube
     }
 
     fn surrounding((x,y,z,a): (i32,i32,i32,i32)) -> impl Iterator<Item=(i32,i32,i32,i32)> {
