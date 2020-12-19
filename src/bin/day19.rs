@@ -5,7 +5,6 @@ use std::iter;
 
 fn main() -> Result<(),anyhow::Error> {
     let opts = FileContentOpts::from_args();
-
     let (mut rules, strings) = parse_input(&opts.file).unwrap();
 
     let num_matches: usize = strings.iter().filter(|s| str_matches_rule(s, 0, &rules).contains("")).count();
@@ -29,27 +28,18 @@ fn str_matches_rule<'a>(s: &'a str, idx: usize, rules: &HashMap<usize,Rule>) -> 
             &str_matches_rules(s, &idxsa, rules) | &str_matches_rules(s, &idxsb, rules)
         },
         Rule::Char(c) => {
-            if s.as_bytes().get(0) == Some(&(*c as u8)) {
-                iter::once(&s[1..]).collect()
-            } else {
-                HashSet::new()
+            match s.starts_with(*c) {
+                true  => iter::once(&s[1..]).collect(),
+                false => HashSet::new()
             }
         }
     }
 }
 
 fn str_matches_rules<'a>(s: &'a str, idxs: &[usize], rules: &HashMap<usize,Rule>) -> HashSet<&'a str> {
-    let mut curr: HashSet<_> = iter::once(s).collect();
-    for &idx in idxs {
-        let mut next = HashSet::new();
-        for s in curr {
-            for m in str_matches_rule(s, idx, rules) {
-                next.insert(m);
-            }
-        }
-        curr = next;
-    }
-    curr
+    idxs.into_iter().fold(iter::once(s).collect(), |curr, &idx| {
+        curr.iter().flat_map(|s| str_matches_rule(s, idx, rules)).collect()
+    })
 }
 
 #[derive(Debug,Clone,PartialEq,Eq)]
