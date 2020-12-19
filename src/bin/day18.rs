@@ -1,6 +1,6 @@
 use structopt::StructOpt;
 use shared::{ FileContentOpts };
-use std::iter;
+use std::{ mem, iter };
 
 fn main() -> Result<(),anyhow::Error> {
     let opts = FileContentOpts::from_args();
@@ -31,17 +31,10 @@ fn calculate_part1(tree: &[TokenTree]) -> Option<usize> {
     for tok in tree.iter() {
         match tok {
             TokenTree::Digit(n) => {
-                match op {
-                    Op::Add => total += *n,
-                    Op::Mult => total *= *n
-                }
+                total = op.execute(total, *n);
             },
             TokenTree::Tree(tree) => {
-                let n = calculate_part1(&tree)?;
-                match op {
-                    Op::Add => total += n,
-                    Op::Mult => total *= n
-                }
+                total = op.execute(total, calculate_part1(&tree)?);
             },
             TokenTree::Op(new_op) => {
                 op = *new_op
@@ -52,16 +45,15 @@ fn calculate_part1(tree: &[TokenTree]) -> Option<usize> {
 }
 
 fn calculate_part2(mut tree: Vec<TokenTree>) -> Option<usize> {
-    fn get_digit(t: &TokenTree) -> Option<usize> {
+    fn take_digit(t: &mut TokenTree) -> Option<usize> {
         match t {
             TokenTree::Digit(n) => Some(*n),
-            TokenTree::Tree(t) => calculate_part2(t.clone()),
+            TokenTree::Tree(t) => calculate_part2(mem::replace(t, Vec::new())),
             _ => None
         }
     }
     fn find_op(tree: &[TokenTree], search_op: Op) -> Option<(usize,Op)> {
-        tree
-            .iter()
+        tree.iter()
             .enumerate()
             .filter_map(|t| t.1.get_op().map(|o| (t.0,o)))
             .find(|(_,op)| *op == search_op)
@@ -69,52 +61,17 @@ fn calculate_part2(mut tree: Vec<TokenTree>) -> Option<usize> {
     fn collapse_one(mut tree: Vec<TokenTree>) -> Option<Vec<TokenTree>> {
         let (idx,op) = find_op(&tree, Op::Add).or(find_op(&tree, Op::Mult))?;
         let collapsed = {
-            let n1 = get_digit(tree.get(idx-1)?)?;
-            let n2 = get_digit(tree.get(idx+1)?)?;
-            let res = match op {
-                Op::Add => n1 + n2,
-                Op::Mult => n1 * n2
-            };
-            TokenTree::Digit(res)
+            let n1 = take_digit(tree.get_mut(idx-1)?)?;
+            let n2 = take_digit(tree.get_mut(idx+1)?)?;
+            TokenTree::Digit(op.execute(n1,n2))
         };
         tree.splice(idx-1..=idx+1, iter::once(collapsed));
         Some(tree)
     }
-
     while tree.len() > 1 {
         tree = collapse_one(tree)?;
     }
-    get_digit(tree.get(0)?)
-}
-
-#[derive(Debug,Clone,Copy,PartialEq,Eq)]
-enum Token {
-    LeftParen,
-    RightParen,
-    Digit(usize),
-    Op(Op)
-}
-
-#[derive(Copy,Clone,Debug,PartialEq,Eq)]
-enum Op {
-    Add,
-    Mult
-}
-
-fn tokenize_expr(s: &str) -> Vec<Token> {
-    s.chars().filter_map(|c| {
-        if let Some(d) = c.to_digit(10) {
-            Some(Token::Digit(d as usize))
-        } else {
-            match c {
-                '(' => Some(Token::LeftParen),
-                ')' => Some(Token::RightParen),
-                '+' => Some(Token::Op(Op::Add)),
-                '*' => Some(Token::Op(Op::Mult)),
-                _ => None
-            }
-        }
-    }).collect()
+    take_digit(tree.get_mut(0)?)
 }
 
 #[derive(Clone,Debug,PartialEq,Eq)]
@@ -164,4 +121,39 @@ fn treeize_tokens(toks: &[Token]) -> Option<Vec<TokenTree>> {
         tree.push(item);
     }
     Some(tree)
+}
+
+#[derive(Debug,Clone,Copy,PartialEq,Eq)]
+enum Token {
+    LeftParen,
+    RightParen,
+    Digit(usize),
+    Op(Op)
+}
+
+fn tokenize_expr(s: &str) -> Vec<Token> {
+    s.chars().filter_map(|c| {
+        match c {
+            '(' => Some(Token::LeftParen),
+            ')' => Some(Token::RightParen),
+            '+' => Some(Token::Op(Op::Add)),
+            '*' => Some(Token::Op(Op::Mult)),
+             n  => Some(Token::Digit(n.to_digit(10)? as usize))
+        }
+    }).collect()
+}
+
+#[derive(Copy,Clone,Debug,PartialEq,Eq)]
+enum Op {
+    Add,
+    Mult
+}
+
+impl Op {
+    fn execute(&self, n1: usize, n2: usize) -> usize {
+        match self {
+            Op::Add => n1 + n2,
+            Op::Mult => n1 * n2
+        }
+    }
 }
