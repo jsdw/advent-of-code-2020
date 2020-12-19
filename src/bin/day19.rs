@@ -11,8 +11,8 @@ fn main() -> Result<(),anyhow::Error> {
     let num_matches: usize = strings.iter().filter(|s| str_matches_rule(s, 0, &rules).contains("")).count();
     println!("Star 1: {}", num_matches);
 
-    rules.insert(8, Rule::OneOrMore(42));
-    rules.insert(11, Rule::SameNumberOf(42, 31));
+    rules.insert(8, Rule::Or(vec![42], vec![42,8]));
+    rules.insert(11, Rule::Or(vec![42,31], vec![42,11,31]));
 
     let num_matches: usize = strings.iter().filter(|s| str_matches_rule(s, 0, &rules).contains("")).count();
     println!("Star 2: {}", num_matches);
@@ -26,12 +26,7 @@ fn str_matches_rule<'a>(s: &'a str, idx: usize, rules: &HashMap<usize,Rule>) -> 
             str_matches_rules(s, &idxs, rules)
         },
         Rule::Or(idxsa, idxsb) => {
-            let a = str_matches_rules(s, &idxsa, rules);
-            if a.is_empty() {
-                str_matches_rules(s, &idxsb, rules)
-            } else {
-                a
-            }
+            &str_matches_rules(s, &idxsa, rules) | &str_matches_rules(s, &idxsb, rules)
         },
         Rule::Char(c) => {
             if s.as_bytes().get(0) == Some(&(*c as u8)) {
@@ -39,25 +34,6 @@ fn str_matches_rule<'a>(s: &'a str, idx: usize, rules: &HashMap<usize,Rule>) -> 
             } else {
                 HashSet::new()
             }
-        },
-        // Special handling for part 2: match one or more of a rule
-        Rule::OneOrMore(idx) => {
-            str_matches_rule_ntimes(s, *idx, rules)
-                .into_iter()
-                .map(|(_,s)| s)
-                .collect()
-        },
-        // Special handling for part 2: match one or more of a rule,
-        // followed by that same number of another rule
-        Rule::SameNumberOf(idxa, idxb) => {
-            let mut out = HashSet::new();
-            for (times, s) in str_matches_rule_ntimes(s, *idxa, rules) {
-                let next_rules: Vec<_> = iter::repeat(*idxb).take(times).collect();
-                for s in str_matches_rules(s, &next_rules, rules) {
-                    out.insert(s);
-                }
-            }
-            out
         }
     }
 }
@@ -76,35 +52,11 @@ fn str_matches_rules<'a>(s: &'a str, idxs: &[usize], rules: &HashMap<usize,Rule>
     curr
 }
 
-fn str_matches_rule_ntimes<'a>(s: &'a str, idx: usize, rules: &HashMap<usize,Rule>) -> HashSet<(usize, &'a str)> {
-    let mut output = HashSet::new();
-    let mut to_visit: HashSet<_> = iter::once(s).collect();
-    let mut times = 0;
-    loop {
-        times += 1;
-        let mut n = 0;
-        let mut to_visit_next = HashSet::new();
-        for s in to_visit {
-            for m in str_matches_rule(s, idx, rules) {
-                output.insert((times,m));
-                to_visit_next.insert(m);
-                n += 1;
-            }
-        }
-        to_visit = to_visit_next;
-        if n == 0 { break }
-    }
-    output
-}
-
 #[derive(Debug,Clone,PartialEq,Eq)]
 enum Rule {
     List(Vec<usize>),
     Or(Vec<usize>, Vec<usize>),
-    Char(char),
-    // Special rules to cater for part 2 tweaks:
-    OneOrMore(usize),
-    SameNumberOf(usize, usize)
+    Char(char)
 }
 
 fn parse_input(s: &str) -> Option<(HashMap<usize,Rule>, Vec<&str>)> {
