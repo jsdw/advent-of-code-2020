@@ -8,7 +8,7 @@ const TILE_SIZE: i32 = 10;
 fn main() -> Result<(),anyhow::Error> {
     let opts = FileContentOpts::from_args();
 
-    // Star 1: put our puzzle pieces together:
+    // Put our puzzle pieces together:
     let mut tiles = parse_tiles(&opts.file);
     let mut tile_map = TileMap::new();
     tile_map.insert((0,0), tiles.pop().unwrap());
@@ -30,28 +30,24 @@ fn main() -> Result<(),anyhow::Error> {
             }
         }
     }
-    let top_left_coords = tile_map
+
+    // Get the product of the map corners to solve part 1:
+    let product: i64 = tile_map
+        .keys()
+        .fold([(0,0),(0,0),(0,0),(0,0)], |[tl,tr,bl,br], &xy| [
+            (tl.0.min(xy.0),tl.1.min(xy.1)),
+            (tr.0.max(xy.0),tr.1.min(xy.1)),
+            (bl.0.min(xy.0),bl.1.max(xy.1)),
+            (br.0.max(xy.0),br.1.max(xy.1))
+        ])
         .iter()
-        .fold((0,0), |(x1,y1), (&(x2,y2),_)| (x1.min(x2),y1.min(y2)));
-    let top_right_coords = tile_map
-        .iter()
-        .fold((0,0), |(x1,y1), (&(x2,y2),_)| (x1.max(x2),y1.min(y2)));
-    let bottom_left_coords = tile_map
-        .iter()
-        .fold((0,0), |(x1,y1), (&(x2,y2),_)| (x1.min(x2),y1.max(y2)));
-    let bottom_right_coords = tile_map
-        .iter()
-        .fold((0,0), |(x1,y1), (&(x2,y2),_)| (x1.max(x2),y1.max(y2)));
-    let product
-        = tile_map.get(&top_left_coords).unwrap().id as u64
-        * tile_map.get(&top_right_coords).unwrap().id as u64
-        * tile_map.get(&bottom_left_coords).unwrap().id as u64
-        * tile_map.get(&bottom_right_coords).unwrap().id as u64;
+        .filter_map(|xy| tile_map.get(xy))
+        .map(|tile| tile.id as i64)
+        .product();
     println!("Star 1: {}", product);
 
-    // Star 2: find sea monsters, stopping once we find some.
-    let map = merge_tile_map(&tile_map);
-    for mut map in map.orientations() {
+    // Find sea monsters, stopping once we find some.
+    for mut map in merge_tile_map(&tile_map).orientations() {
         let monster_tails: Vec<(i32,i32)> = map.pixels
             .iter()
             .copied()
@@ -107,24 +103,15 @@ fn tile_can_go_here(tile: &Tile, xy: (i32,i32), tile_map: &TileMap) -> bool {
     surrounding(xy).filter(|xy2| tile_map.contains_key(xy2)).all(|xy2| {
         let tile_map_tile = tile_map.get(&xy2).expect("tile map tile");
         match (xy2.0-xy.0, xy2.1-xy.1) {
-            // tile|tile_map_tile
-            (1,0) => {
-                tile.pixels.rights().zip(tile_map_tile.pixels.lefts()).all(|(p1,p2)| p1 == p2)
-            },
-            // tile_map_tile|tile
-            (-1,0) => {
-                tile.pixels.lefts().zip(tile_map_tile.pixels.rights()).all(|(p1,p2)| p1 == p2)
-            },
-            // tile
-            // tile_map_tile
-            (0,1) => {
-                tile.pixels.bottoms().zip(tile_map_tile.pixels.tops()).all(|(p1,p2)| p1 == p2)
-            },
-            // tile_map_tile
-            // tile
-            (0,-1) => {
-                tile.pixels.tops().zip(tile_map_tile.pixels.bottoms()).all(|(p1,p2)| p1 == p2)
-            },
+            // tile | tile_map_tile
+            (1,0)  => tile.pixels.rights().zip(tile_map_tile.pixels.lefts()).all(|(p1,p2)| p1 == p2),
+            // tile_map_tile | tile
+            (-1,0) => tile.pixels.lefts().zip(tile_map_tile.pixels.rights()).all(|(p1,p2)| p1 == p2),
+            // tile v tile_map_tile
+            (0,1)  => tile.pixels.bottoms().zip(tile_map_tile.pixels.tops()).all(|(p1,p2)| p1 == p2),
+            // tile_map_tile v tile
+            (0,-1) => tile.pixels.tops().zip(tile_map_tile.pixels.bottoms()).all(|(p1,p2)| p1 == p2),
+            // unreachable..
             _ => { unreachable!("coords should always be touching") }
         }
     })
