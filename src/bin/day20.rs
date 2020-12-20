@@ -80,6 +80,7 @@ fn sea_monster_at((x,y): (i32,i32)) -> impl Iterator<Item=(i32,i32)> {
 }
 
 fn merge_tile_map(tile_map: &TileMap) -> Pixels {
+    // Squash the pixels of each tile into a single set, removing borders:
     let set: HashSet<_> = tile_map
         .iter()
         .flat_map(|((x,y),t)| {
@@ -91,14 +92,15 @@ fn merge_tile_map(tile_map: &TileMap) -> Pixels {
         })
         .collect();
 
+    // find the bounds and thus size of the map:
     let (lowx, highx) = set.iter().fold((0,0), |(low,high),&(x,_)| (x.min(low), x.max(high)));
     let (lowy, highy) = set.iter().fold((0,0), |(low,high),&(_,y)| (y.min(low), y.max(high)));
     let size = (highx - lowx).max(highy - lowy);
 
-    Pixels {
-        size: size,
-        pixels: set.into_iter().map(|(x,y)| (x-lowx,y-lowy)).collect()
-    }
+    // Make sure the top left is 0,0 so that we can rotate etc sensibly:
+    let pixels = set.into_iter().map(|(x,y)| (x-lowx,y-lowy)).collect();
+
+    Pixels { size, pixels }
 }
 
 fn tile_can_go_here(tile: &Tile, xy: (i32,i32), tile_map: &TileMap) -> bool {
