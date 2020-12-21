@@ -1,6 +1,7 @@
 use structopt::StructOpt;
 use shared::{ FileContentOpts, regex };
 use std::collections::{ HashSet, HashMap };
+use itertools::Itertools;
 
 fn main() -> Result<(),anyhow::Error> {
     let opts = FileContentOpts::from_args();
@@ -23,17 +24,13 @@ fn main() -> Result<(),anyhow::Error> {
 
     // Reduce the set of allergens to one per food (assumes that there is exactly 1 per food)
     let mut dangerous_ingredients = vec![];
-    while let Some((a,i)) = atoi.iter().find(|(_, ingredients)| ingredients.len() == 1) {
-        let allergen = *a;
+    while let Some((&allergen,i)) = atoi.iter().find(|(_, ingredients)| ingredients.len() == 1) {
         let ingredient = *i.iter().next().unwrap();
         dangerous_ingredients.push((allergen,ingredient));
-        atoi = atoi.into_iter()
-            .filter(|(a,_)| *a != allergen)
-            .map(|(a,mut i)| { i.remove(ingredient); (a,i) })
-            .collect();
+        for (_,is) in &mut atoi { is.remove(ingredient); }
     }
     dangerous_ingredients.sort_by_key(|(a,_)| *a);
-    let danger_list = dangerous_ingredients.into_iter().map(|(_,i)| i).collect::<Vec<_>>().join(",");
+    let danger_list = dangerous_ingredients.into_iter().map(|(_,i)| i).join(",");
     println!("Star 2: {}", danger_list);
 
     Ok(())
