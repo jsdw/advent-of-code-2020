@@ -1,5 +1,5 @@
 use structopt::StructOpt;
-use shared::{ FileContentOpts, regex, unwrap_or };
+use shared::{ FileContentOpts, regex };
 use std::collections::{ HashSet, HashMap };
 
 fn main() -> Result<(),anyhow::Error> {
