@@ -82,10 +82,6 @@ mod cups {
         pub fn next_after(&self, cup_idx: usize) -> impl Iterator<Item=usize> + '_ {
             successors(Some(cup_idx), move |idx| Some(self.vec[*idx])).skip(1)
         }
-        /// What is the current cup we're looking at?
-        pub fn current_cup(&self) -> usize {
-            self.current_index
-        }
         /// Minus one from the cup number to get the previous one.
         fn minus_one_cup(&self, n: usize) -> usize {
             let num_cups = self.vec.len() - 1;
