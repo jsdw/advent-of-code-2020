@@ -8,15 +8,11 @@ fn main() -> Result<(),anyhow::Error> {
     let input = parse_input(&opts.file);
 
     let mut cups = Cups::new(input.len(), input.clone());
-    for _ in 0..100 {
-        cups.step();
-    }
+    for _ in 0..100 { cups.step() }
     println!("Star 1: {}", cups.next_after(1).take(8).join(""));
 
     let mut cups = Cups::new(1_000_000, input.clone());
-    for _ in 0..10_000_000 {
-        cups.step();
-    }
+    for _ in 0..10_000_000 { cups.step() }
     println!("Star 2: {}", cups.next_after(1).take(2).product::<usize>());
 
     Ok(())
@@ -32,8 +28,6 @@ fn parse_input(s: &str) -> Vec<usize> {
 
 mod cups {
 
-    use std::iter::successors;
-
     pub struct Cups {
         /// Each index corresponds to the cup_number. The
         /// value stored corresponds to the index of the
@@ -41,7 +35,7 @@ mod cups {
         vec: Vec<usize>,
         /// This is the index into the vec of the current
         /// cup.
-        current_index: usize
+        current_cup: usize
     }
 
     impl Cups {
@@ -57,33 +51,33 @@ mod cups {
             }
             Cups {
                 vec: v,
-                current_index: starting_order[0]
+                current_cup: starting_order[0]
             }
         }
         /// Take one turn from the current position:
         pub fn step(&mut self) {
             // Take 3 cups clockwise of current:
             let (t1, t2, t3) = {
-                let mut ts = self.next_after(self.current_index);
+                let mut ts = self.next_after(self.current_cup);
                 (ts.next().unwrap(),ts.next().unwrap(),ts.next().unwrap())
             };
             // Find idx of cup to put them in front of:
-            let mut next_idx = self.minus_one_cup(self.current_index);
-            while t1 == next_idx || t2 == next_idx || t3 == next_idx {
-                next_idx = self.minus_one_cup(next_idx);
+            let mut next_cup = self.minus_one_cup(self.current_cup);
+            while t1 == next_cup || t2 == next_cup || t3 == next_cup {
+                next_cup = self.minus_one_cup(next_cup);
             }
             // The current index now points to the thing after the last taken cup:
-            self.vec[self.current_index] = self.vec[t3];
+            self.vec[self.current_cup] = self.vec[t3];
             // Last taken index now points to what the next_index used to:
-            self.vec[t3] = self.vec[next_idx];
+            self.vec[t3] = self.vec[next_cup];
             // Next index now points to the first taken cup:
-            self.vec[next_idx] = t1;
+            self.vec[next_cup] = t1;
             // Current index is now the next cup around:
-            self.current_index = self.vec[self.current_index];
+            self.current_cup = self.vec[self.current_cup];
         }
         /// Return an iterator over the next cups in line from the number given:
-        pub fn next_after(&self, cup_idx: usize) -> impl Iterator<Item=usize> + '_ {
-            successors(Some(cup_idx), move |idx| Some(self.vec[*idx])).skip(1)
+        pub fn next_after(&self, cup: usize) -> impl Iterator<Item=usize> + '_ {
+            std::iter::successors(Some(cup), move |cup| Some(self.vec[*cup])).skip(1)
         }
         /// Minus one from the cup number to get the previous one.
         fn minus_one_cup(&self, n: usize) -> usize {
