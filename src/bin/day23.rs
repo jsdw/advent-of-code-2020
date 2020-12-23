@@ -35,7 +35,7 @@ mod cups {
     use std::iter::successors;
 
     pub struct Cups {
-        /// Each index corresponds to cup_number-1. The
+        /// Each index corresponds to the cup_number. The
         /// value stored corresponds to the index of the
         /// next cup in the sequence
         vec: Vec<usize>,
