@@ -63,18 +63,21 @@ mod cups {
         /// Take one turn from the current position:
         pub fn step(&mut self) {
             // Take 3 cups clockwise of current:
-            let taken_indexes: Vec<usize> = self.next_after(self.current_index).take(3).collect();
+            let (t1, t2, t3) = {
+                let mut ts = self.next_after(self.current_index);
+                (ts.next().unwrap(),ts.next().unwrap(),ts.next().unwrap())
+            };
             // Find idx of cup to put them in front of:
             let mut next_idx = self.minus_one_cup(self.current_index);
-            while taken_indexes.contains(&next_idx) {
+            while t1 == next_idx || t2 == next_idx || t3 == next_idx {
                 next_idx = self.minus_one_cup(next_idx);
             }
             // The current index now points to the thing after the last taken cup:
-            self.vec[self.current_index] = self.vec[*taken_indexes.last().unwrap()];
+            self.vec[self.current_index] = self.vec[t3];
             // Last taken index now points to what the next_index used to:
-            self.vec[*taken_indexes.last().unwrap()] = self.vec[next_idx];
+            self.vec[t3] = self.vec[next_idx];
             // Next index now points to the first taken cup:
-            self.vec[next_idx] = taken_indexes[0];
+            self.vec[next_idx] = t1;
             // Current index is now the next cup around:
             self.current_index = self.vec[self.current_index];
         }
